@@ -3,7 +3,7 @@ using Godot;
 
 namespace Game;
 
-public partial class Main : Node2D
+public partial class Main : Node
 {
     private Sprite2D _cursor;
     private PackedScene _buildingScene;
@@ -26,9 +26,9 @@ public partial class Main : Node2D
 
     public override void _UnhandledInput(InputEvent evt)
     {
-        if (_cursor.Visible && evt.IsActionPressed("left_click") && !_occupiedCells.Contains(GetMouseGridCellPosition()))
+        if (_hoveredGridCell.HasValue && evt.IsActionPressed("left_click") && !_occupiedCells.Contains(_hoveredGridCell.Value))
         {
-            PlaceBuildingAtMousePosition();
+            PlaceBuildingAtHoveredCellPosition();
             _cursor.Visible = false;
         }
     }
@@ -47,20 +47,24 @@ public partial class Main : Node2D
 
     private Vector2 GetMouseGridCellPosition()
     {
-        var mousePosition = GetGlobalMousePosition();
+        var mousePosition = _highlightTileMapLayer.GetGlobalMousePosition();
         var gridPosition = (mousePosition / 64).Floor();
 
         return gridPosition;
     }
 
-    private void PlaceBuildingAtMousePosition()
+    private void PlaceBuildingAtHoveredCellPosition()
     {
+        if (!_hoveredGridCell.HasValue)
+        {
+            return;
+        }
+
         var building = _buildingScene.Instantiate<Node2D>();
         AddChild(building);
 
-        var gridPosition = GetMouseGridCellPosition();
-        building.GlobalPosition = gridPosition * 64;
-        _occupiedCells.Add(gridPosition);
+        building.GlobalPosition = _hoveredGridCell.Value * 64;
+        _occupiedCells.Add(_hoveredGridCell.Value);
 
         _hoveredGridCell = null;
         UpdateHighlightTileMapLayer();
