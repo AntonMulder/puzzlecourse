@@ -7,12 +7,15 @@ public partial class Main : Node2D
     private Sprite2D _cursor;
     private PackedScene _buildingScene;
     private Button _placeBuildingButton;
+    private TileMapLayer _highlightTileMapLayer;
+    private Vector2? _hoveredGridCell;
 
     public override void _Ready()
     {
         _buildingScene = GD.Load<PackedScene>("res://scenes/building/Building.tscn");
         _cursor = GetNode<Sprite2D>("Cursor");
         _placeBuildingButton = GetNode<Button>("PlaceBuildingButton");
+        _highlightTileMapLayer = GetNode<TileMapLayer>("HighlightTileMapLayer");
 
         _cursor.Visible = false;
 
@@ -32,6 +35,12 @@ public partial class Main : Node2D
     {
         var gridPosition = GetMouseGridCellPosition();
         _cursor.GlobalPosition = gridPosition * 64;
+
+        if (_cursor.Visible && (!_hoveredGridCell.HasValue || _hoveredGridCell.Value != gridPosition))
+        {
+            _hoveredGridCell = gridPosition;
+            UpdateHighlightTileMapLayer();
+        }
     }
 
     private Vector2 GetMouseGridCellPosition()
@@ -49,6 +58,26 @@ public partial class Main : Node2D
 
         var gridPosition = GetMouseGridCellPosition();
         building.GlobalPosition = gridPosition * 64;
+
+        _hoveredGridCell = null;
+        UpdateHighlightTileMapLayer();
+    }
+
+    private void UpdateHighlightTileMapLayer()
+    {
+        _highlightTileMapLayer.Clear();
+        if (!_hoveredGridCell.HasValue)
+        {
+            return;
+        }
+
+        for (var x = _hoveredGridCell.Value.X - 3; x <= _hoveredGridCell.Value.X + 3; x++)
+        {
+            for (var y = _hoveredGridCell.Value.Y - 3; y <= _hoveredGridCell.Value.Y + 3; y++)
+            {
+                _highlightTileMapLayer.SetCell(new Vector2I((int)x, (int)y), 0, Vector2I.Zero);
+            }
+        }
     }
 
     private void OnPlaceBuildingButtonPressed()
