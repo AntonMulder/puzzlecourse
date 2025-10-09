@@ -1,3 +1,4 @@
+using System;
 using Godot;
 using System.Collections.Generic;
 
@@ -5,27 +6,36 @@ namespace Game.Managers;
 
 public partial class GridManager : Node
 {
-    private HashSet<Vector2> _occupiedCells = new();
+    private HashSet<Vector2I> _occupiedCells = new();
 
     [Export] private TileMapLayer _highlightTileMapLayer;
     [Export] private TileMapLayer _baseTerrainTileMapLayer;
 
-
-    public override void _Ready()
-    {
-    }
-
-    public void MarkTileAsOccupied(Vector2 tilePosition)
+    public void MarkTileAsOccupied(Vector2I tilePosition)
     {
         _occupiedCells.Add(tilePosition);
     }
 
-    public bool IsTilePositionValid(Vector2 tilePosition)
+    public bool IsTilePositionValid(Vector2I tilePosition)
     {
-        return !_occupiedCells.Contains(tilePosition);
+        var custom_data = _baseTerrainTileMapLayer.GetCellTileData(tilePosition);
+
+        if (custom_data == null)
+        {
+            return false;
+        }
+
+        if (!(bool)custom_data.GetCustomData("buildable"))
+        {
+            return false;
+        }
+
+        {
+            return !_occupiedCells.Contains(tilePosition);
+        }
     }
 
-    public void HighlightTilesInRadius(Vector2 rootCell, int radius)
+    public void HighlightTilesInRadius(Vector2I rootCell, int radius)
     {
         _highlightTileMapLayer.Clear();
 
@@ -33,12 +43,13 @@ public partial class GridManager : Node
         {
             for (var y = rootCell.Y - radius; y <= rootCell.Y + radius; y++)
             {
-                if (!IsTilePositionValid(new Vector2(x, y)))
+                var tilePosition = new Vector2I(x, y);
+                if (!IsTilePositionValid(tilePosition))
                 {
                     continue;
                 }
 
-                _highlightTileMapLayer.SetCell(new Vector2I((int)x, (int)y), 0, Vector2I.Zero);
+                _highlightTileMapLayer.SetCell(tilePosition, 0, Vector2I.Zero);
             }
         }
     }
@@ -48,11 +59,11 @@ public partial class GridManager : Node
         _highlightTileMapLayer.Clear();
     }
 
-    public Vector2 GetMouseGridCellPosition()
+    public Vector2I GetMouseGridCellPosition()
     {
         var mousePosition = _highlightTileMapLayer.GetGlobalMousePosition();
         var gridPosition = (mousePosition / 64).Floor();
 
-        return gridPosition;
+        return new Vector2I((int)gridPosition.X, (int)gridPosition.Y);
     }
 }
