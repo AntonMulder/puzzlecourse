@@ -1,6 +1,7 @@
-using System;
 using Godot;
 using System.Collections.Generic;
+using System.Linq;
+using Game.Component;
 
 namespace Game.Managers;
 
@@ -35,10 +36,8 @@ public partial class GridManager : Node
         }
     }
 
-    public void HighlightTilesInRadius(Vector2I rootCell, int radius)
+    private void HighlightValidTilesInRadius(Vector2I rootCell, int radius)
     {
-        _highlightTileMapLayer.Clear();
-
         for (var x = rootCell.X - radius; x <= rootCell.X + radius; x++)
         {
             for (var y = rootCell.Y - radius; y <= rootCell.Y + radius; y++)
@@ -65,5 +64,16 @@ public partial class GridManager : Node
         var gridPosition = (mousePosition / 64).Floor();
 
         return new Vector2I((int)gridPosition.X, (int)gridPosition.Y);
+    }
+
+    public void HighlightBuildableTiles()
+    {
+        ClearHighlightedTiles();
+        var buildingComponents = GetTree().GetNodesInGroup(nameof(BuildingComponent)).Cast<BuildingComponent>();
+
+        foreach (var buildingComponent in buildingComponents)
+        {
+            HighlightValidTilesInRadius(buildingComponent.GetGridCellPosition(), buildingComponent.BuildableRadius);
+        }
     }
 }
